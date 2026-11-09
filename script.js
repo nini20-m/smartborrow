@@ -29,14 +29,14 @@ function authHTML(reg){return`<div class="auth card"><h1>SmartBorrow</h1><p clas
 <form onsubmit="return ${reg?'doReg':'doLogin'}(event)">${reg?`<label for="n">Full name</label><input id="n" required><label for="k">I am a</label><select id="k"><option>Student</option><option>Teacher</option><option>Staff</option></select>`:''}
 <label for="i">School ID</label><input id="i" required autocomplete="username"><label for="p">Password</label><input id="p" type="password" required minlength="${reg?6:1}" autocomplete="${reg?'new-password':'current-password'}">
 <p id="err" class="er"></p><div class="row"><button class="pri">${reg?'Create account':'Log in'}</button><button type="button" onclick="$('app').innerHTML=authHTML(${!reg})">${reg?'I have an account':'Create account'}</button></div></form>
-${reg?'<p class="mu">New accounts wait for administrator approval.</p>':'<p class="mu">Demo logins: admin / admin123, custodian / cust123, 2026-0001 / student123</p>'}</div>`}
+${reg?'':'<p class="mu">Demo logins: admin / admin123, custodian / cust123, 2026-0001 / student123</p>'}</div>`}
 async function doLogin(e){e.preventDefault();const u=U($('i').value.trim()),h=await sha($('p').value);
  if(!u||u.pw!==h)return $('err').textContent='Wrong School ID or password.',false;
  if(u.status!=='active')return $('err').textContent=u.status==='pending'?'Your account is waiting for administrator approval.':'This account is disabled. Contact the administrator.',false;
  me=u;T='';render();if(PI)handlePending();return false}
 async function doReg(e){e.preventDefault();const id=$('i').value.trim();if(U(id))return $('err').textContent='That School ID is already registered.',false;
- S.users.push({id,name:$('n').value.trim(),pw:await sha($('p').value),role:'borrower',kind:$('k').value,status:'pending'});save();
- $('app').innerHTML=authHTML(false);toast('Account created. Wait for administrator approval.');return false}
+ const u={id,name:$('n').value.trim(),pw:await sha($('p').value),role:'borrower',kind:$('k').value,status:'active'};S.users.push(u);save();
+ me=u;T='';render();toast('Account created. Welcome, '+u.name+'!');if(PI)handlePending();return false}
 function logout(){me=null;render()}
 /* ---------- shell ---------- */
 const TABS={borrower:[['equip','Equipment'],['mine','My items'],['hist','History']],
