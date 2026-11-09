@@ -23,7 +23,11 @@ async function init(){
   addItems('Projector','Audio-visual','HDMI/VGA classroom projector',2,'Good');addItems('Laptop','Computers','Teacher laptop with charger',2,'Good');
   addItems('Extension cord','Electrical','5-meter, 4 outlets',1,'Good');addItems('Portable speaker','Audio-visual','Bluetooth, battery powered',1,'Good');
   addItems('Microscope','Laboratory','Compound light microscope',1,'Good');addItems('Volleyball','Sports','Official size',1,'Good');save()}
-  PI=hashItem();render()}
+  try{const sid=localStorage.getItem(K+'-me');if(sid&&U(sid)&&U(sid).status==='active')me=U(sid)}catch(e){}
+  PI=hashItem();render();if(me&&PI)handlePending()}
+function keep(){try{localStorage.setItem(K+'-me',me.id)}catch(e){}}
+function refresh(){try{const d=JSON.parse(localStorage.getItem(K));if(d)S=d}catch(e){}render();toast('Updated.')}
+addEventListener('storage',e=>{if(e.key===K&&e.newValue&&!$('dlg').open){try{S=JSON.parse(e.newValue)}catch(x){}render()}});
 /* ---------- auth ---------- */
 function authHTML(reg){return`<div class="auth card"><h1>SmartBorrow</h1><p class="mu">Borrow and return school equipment by scanning a QR code.</p>${PI?`<div class="ban">You scanned ${esc(PI)}. Log in to borrow or return it.</div>`:''}
 <form onsubmit="return ${reg?'doReg':'doLogin'}(event)">${reg?`<label for="n">Full name</label><input id="n" required><label for="k">I am a</label><select id="k"><option>Student</option><option>Teacher</option><option>Staff</option></select>`:''}
@@ -33,18 +37,18 @@ ${reg?'':'<p class="mu">Demo logins: admin / admin123, custodian / cust123, 2026
 async function doLogin(e){e.preventDefault();const u=U($('i').value.trim()),h=await sha($('p').value);
  if(!u||u.pw!==h)return $('err').textContent='Wrong School ID or password.',false;
  if(u.status!=='active')return $('err').textContent=u.status==='pending'?'Your account is waiting for administrator approval.':'This account is disabled. Contact the administrator.',false;
- me=u;T='';render();if(PI)handlePending();return false}
+ me=u;keep();T='';render();if(PI)handlePending();return false}
 async function doReg(e){e.preventDefault();const id=$('i').value.trim();if(U(id))return $('err').textContent='That School ID is already registered.',false;
  const u={id,name:$('n').value.trim(),pw:await sha($('p').value),role:'borrower',kind:$('k').value,status:'active'};S.users.push(u);save();
- me=u;T='';render();toast('Account created. Welcome, '+u.name+'!');if(PI)handlePending();return false}
-function logout(){me=null;render()}
+ me=u;keep();T='';render();toast('Account created. Welcome, '+u.name+'!');if(PI)handlePending();return false}
+function logout(){me=null;try{localStorage.removeItem(K+'-me')}catch(e){}render()}
 /* ---------- shell ---------- */
 const TABS={borrower:[['equip','Equipment'],['mine','My items'],['hist','History']],
  custodian:[['equip','Equipment'],['tx','Transactions'],['issues','Reports'],['add','Add equipment']],
  admin:[['users','Users'],['equip','Equipment'],['tx','Transactions'],['issues','Reports'],['add','Add equipment'],['rules','Rules and summary']]};
 function render(){const a=$('app');if(!me){a.innerHTML=authHTML(false);return}
  me=U(me.id);const tabs=TABS[me.role];if(!tabs.some(t=>t[0]===T))T=tabs[0][0];
- a.innerHTML=`<header><div class="brand"><b>SmartBorrow</b><small>${esc(me.name)} (${me.role})</small></div><div class="row"><button class="pri" onclick="scanner()">Scan QR</button><button onclick="logout()">Log out</button></div></header>
+ a.innerHTML=`<header><div class="brand"><b>SmartBorrow</b><small>${esc(me.name)} (${me.role})</small></div><div class="row"><button class="pri" onclick="scanner()">Scan QR</button><button onclick="refresh()">Refresh</button><button onclick="logout()">Log out</button></div></header>
  <nav>${tabs.map(t=>`<button class="${t[0]===T?'on':''}" onclick="T='${t[0]}';render()">${t[1]}</button>`).join('')}</nav>${banner()}<div id="v"></div>`;
  $('v').innerHTML=V[T]();if(T==='equip')list()}
 function banner(){if(me.role!=='borrower')return'';const m=S.tx.filter(t=>t.user===me.id&&t.status==='open'&&t.due-now()<864e5);
